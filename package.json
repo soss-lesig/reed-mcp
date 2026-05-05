@@ -11,7 +11,10 @@
     "LICENSE",
     "README.md"
   ],
-  "scripts": {},
+  "scripts": {
+    "start:stdio": "node --env-file=.env src/index.stdio.js",
+    "start:http": "node --env-file=.env src/index.http.js"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
