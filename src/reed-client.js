@@ -11,7 +11,7 @@ const BASE_URL = 'https://www.reed.co.uk/api/1.0';
  * Structured error for non-2xx responses from the Reed API. Tool handlers
  * switch on the `code` property to produce appropriate MCP error responses.
  *
- * Valid codes (closed enum — adding a new one requires a DECISIONS.md entry):
+ * Valid codes (closed enum; adding a new one requires a DECISIONS.md entry):
  * RATE_LIMITED, AUTH_FAILED, UPSTREAM_ERROR, NOT_FOUND, BAD_REQUEST.
  */
 export class ReedApiError extends Error {
@@ -35,7 +35,7 @@ export class ReedApiError extends Error {
 
 /**
  * Thin HTTP wrapper around Reed's Jobseeker API. Handles authentication,
- * query serialisation, and error mapping. Has no MCP awareness — it returns
+ * query serialisation, and error mapping. Has no MCP awareness: it returns
  * plain objects parsed from Reed's JSON responses.
  */
 export default class ReedClient {
@@ -129,14 +129,14 @@ export default class ReedClient {
     if (status === 429) {
       const retryAfter = this.#parseRetryAfter(response.headers.get('retry-after'));
       return new ReedApiError(
-        'Reed rate limit exceeded — try again later',
+        'Reed rate limit exceeded. Try again later.',
         { status, code: 'RATE_LIMITED', retryAfter },
       );
     }
 
     if (status === 401 || status === 403) {
       return new ReedApiError(
-        'Reed rejected the API key — check REED_API_KEY is valid',
+        'Reed rejected the API key. Check REED_API_KEY is valid.',
         { status, code: 'AUTH_FAILED' },
       );
     }
