@@ -1,6 +1,6 @@
 {
   "name": "reed-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Model Context Protocol server for the Reed.co.uk jobs API",
   "type": "module",
   "bin": {
