@@ -39,7 +39,7 @@ Click **Deploy on Railway** above. Railway clones the repo, builds via the Docke
 
 Then in Claude.ai web: Settings → Connectors → Add custom → paste the Railway URL with `/mcp` on the end (e.g. `https://your-app.up.railway.app/mcp`).
 
-For Docker, manual hosting, and other deployment options, see [`docs/deploy.md`](docs/deploy.md).
+For Docker, manual hosting, and other deployment options, see [`docs/deploy.md`](https://github.com/soss-lesig/reed-mcp/blob/main/docs/deploy.md).
 
 ## Tools
 
