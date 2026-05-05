@@ -42,12 +42,12 @@ The vault file `docs/code-walkthrough.md` is a prose tour guide to the codebase,
 
 - **Repo:** `/Users/drewbs/dev/projects/repos/reed-mcp`
 - **Vault:** `/Users/drewbs/dev/drewbs-vault/mayus-vault/projects/reed-mcp/`
-  - `README.md` — project overview
-  - `DECISIONS.md` — architectural decisions log (read this for the "why")
-  - `ROADMAP.md` — build queue and deferred items
-  - `docs/session-notes.md` — live session log, append new dated entries here as work progresses
-  - `docs/code-walkthrough.md` — prose tour of the codebase, updated same-commit as code changes
-  - `blog/` — blog post drafts (empty for now)
+  - `README.md` - project overview
+  - `DECISIONS.md` - architectural decisions log (read this for the "why")
+  - `ROADMAP.md` - build queue and deferred items
+  - `docs/session-notes.md` - live session log, append new dated entries here as work progresses
+  - `docs/code-walkthrough.md` - prose tour of the codebase, updated same-commit as code changes
+  - `blog/` - blog post drafts (empty for now)
 
 ### Session Close Checklist
 
@@ -66,40 +66,44 @@ After the first working session, index the repo with `jcodemunch:index_folder` f
 
 ## Part B: Current Session Brief
 
-**Session:** 2 (first build session; session 1 was planning in Claude Desktop on 2026-04-23)
-**Date:** 2026-04-24
-**Goal:** Ship v0.1.0. Public GitHub repo with a working dual-transport MCP server, deployable in 90 seconds via Railway, publishable to npm as `reed-mcp`.
+**Session:** 4 (next Code session; session 3 was 2026-05-05, split between Desktop and Code)
+**Date:** TBD
+**Goal:** Continue v0.1.0 build. Step 8 (server.js) onwards.
 
-### Build queue (in order)
+### Completed steps
+
+Steps 1-7 are done and committed. Current repo state: five commits on main, no remote, working tree clean.
+
+| Commit | Step(s) | Message |
+|--------|---------|---------|
+| `e5d1193` | 1-4 | `chore: scaffold project` |
+| `fc84aa2` | 5 | `feat: add Reed API client` |
+| `fb61dfe` | 6 | `feat: add search_jobs MCP tool` |
+| (from session 3) | 6.5 | `refactor: extract shared tool helpers` |
+| (from session 3) | 7 | `feat: add get_job_details MCP tool` |
+
+### Build queue (remaining)
 
 Every step that creates or edits a `src/` file also updates the matching section in `docs/code-walkthrough.md` in the same commit, per the enforced rule above.
 
-1. **npm init** — ESM package, `"type": "module"`, `"bin"` entry pointing at `src/index.stdio.js`, Node 20+ engine.
-2. **Install dependencies** — `@modelcontextprotocol/sdk`, `express`, `zod`. No dev dependencies unless needed.
-3. **Write `.env.example`** — just `REED_API_KEY=` with a comment pointing at the Reed developer portal.
-4. **Write `LICENSE`** — MIT, year 2026, holder "Andrew Pendlebury".
-5. **Build `src/reed-client.js`** — class-based client, constructor takes `{ apiKey }`, exposes `searchJobs(params)` and `getJobDetails(jobId)`. HTTP Basic Auth, key as username, empty password. Handles 429 and 403 as structured errors per the rate-limiting decision. Uses native `fetch` (Node 20+). Update walkthrough section.
-6. **Build `src/tools/search-jobs.js`** — exports a zod schema matching Reed's search parameters and a handler function that takes `(args, client)` and returns MCP tool response format. Update walkthrough section.
-7. **Build `src/tools/get-job-details.js`** — same shape, for the details endpoint. Update walkthrough section.
-8. **Build `src/server.js`** — creates an `McpServer` instance, registers both tools, exports the configured server. Knows nothing about transports. Update walkthrough section.
-9. **Build `src/index.stdio.js`** — imports the server, wraps it in `StdioServerTransport`, starts listening. Reads `REED_API_KEY` from env, fails loudly if missing. Update walkthrough section.
-10. **Build `src/index.http.js`** — imports the server, wraps it in `StreamableHTTPServerTransport`, mounts on Express at `POST /mcp`. Reads `PORT` from env (Railway sets this), defaults to 3000. Update walkthrough section.
-11. **Add npm scripts** — `start:stdio`, `start:http`, both using `node --env-file=.env src/index.*.js`.
-12. **Write `Dockerfile`** — Node 20 alpine, copy package.json, install, copy src, expose PORT, CMD runs the HTTP entry point.
-13. **Write `railway.json`** — minimum viable Railway template config for one-click deploy.
-14. **Write `README.md`** — the product-facing README. Hero section, Railway deploy button, stdio config snippet for local clients, link to `docs/deploy.md` for alternatives. Credit @kld3v's reed_jobs_mcp in one line.
-15. **Write `docs/deploy.md`** — Railway (primary), Docker, manual clone-and-run.
-16. **Local test: stdio** — run `npm run start:stdio`, verify it starts and responds to a basic MCP initialize from a local Claude Desktop config pointing at it.
-17. **Local test: HTTP** — run `npm run start:http`, curl the `/mcp` endpoint with a valid MCP initialize payload, verify response.
-18. **Git init, first commit** — `chore: initial commit` with vault `DECISIONS.md` context referenced in the PR description later. Wait for sign-off before commit.
-19. **Create GitHub repo** (public, MIT, no README conflict — ours lives in the repo). Push.
-20. **Deploy to Railway** — point Railway at the GitHub repo, set `REED_API_KEY` env var, confirm public URL works.
-21. **End-to-end test** — add the Railway URL as a custom connector in Claude.ai, run a real query, confirm it works.
-22. **Tag v0.1.0** and push the tag.
-23. **npm publish** — verify `reed-mcp` is available on npm, fall back to `@drewbs/reed-mcp` if not. Publish. (If time is short, this is the step to defer to a follow-up session.)
-24. **Session close** — update `docs/session-notes.md`, tick `ROADMAP.md`, verify walkthrough is current, `jcodemunch:index_folder` this directory.
+8. **Build `src/server.js`** - creates an `McpServer` instance, registers both tools, exports the configured server. Knows nothing about transports. Agreed shape: closure-binding loop, tool handlers stay `(args, client)`. DECISIONS.md entry deferred until the SDK schema-shape question is resolved (whether `server.tool` accepts a refined `ZodObject` or wants a raw `ZodRawShape`). Update walkthrough section.
+9. **Build `src/index.stdio.js`** - imports the server, wraps it in `StdioServerTransport`, starts listening. Reads `REED_API_KEY` from env, fails loudly if missing. This is the `bin` target for `npx reed-mcp`. Update walkthrough section.
+10. **Build `src/index.http.js`** - imports the server, wraps it in `StreamableHTTPServerTransport`, mounts on Express at `POST /mcp`. Reads `PORT` from env (Railway sets this), defaults to 3000. Update walkthrough section.
+11. **Add npm scripts** - `start:stdio`, `start:http`, both using `node --env-file=.env src/index.*.js`.
+12. **Write `Dockerfile`** - Node 20 alpine, copy package.json, install, copy src, expose PORT, CMD runs the HTTP entry point.
+13. **Write `railway.json`** - minimum viable Railway template config for one-click deploy.
+14. **Write `README.md`** - the product-facing README. Hero section, Railway deploy button, stdio config snippet for local clients, link to `docs/deploy.md` for alternatives. Credit @kld3v's reed_jobs_mcp in one line.
+15. **Write `docs/deploy.md`** - Railway (primary), Docker, manual clone-and-run.
+16. **Local test: stdio** - run `npm run start:stdio`, verify it starts and responds to a basic MCP initialise from a local Claude Desktop config pointing at it.
+17. **Local test: HTTP** - run `npm run start:http`, curl the `/mcp` endpoint with a valid MCP initialise payload, verify response.
+18. **Create GitHub repo** (public, MIT, no README conflict - ours lives in the repo). Push.
+19. **Deploy to Railway** - point Railway at the GitHub repo, set `REED_API_KEY` env var, confirm public URL works.
+20. **End-to-end test** - add the Railway URL as a custom connector in Claude.ai, run a real query, confirm it works.
+21. **Tag v0.1.0** and push the tag.
+22. **npm publish** - verify `reed-mcp` is available on npm, fall back to `@drewbs/reed-mcp` if not. Publish. (If time is short, this is the step to defer to a follow-up session.)
+23. **Session close** - update `docs/session-notes.md`, tick `ROADMAP.md`, verify walkthrough is current, `jcodemunch:index_folder` this directory.
 
-### Things NOT in scope this session
+### Things NOT in scope
 
 - Portfolio page on drewbs.dev (separate session).
 - Blog post drafting (separate session; raw session notes go in the vault as we work).
@@ -108,6 +112,8 @@ Every step that creates or edits a `src/` file also updates the matching section
 - CI/CD, automated release workflows.
 - Anything in the "Explicitly deferred" or "Not going to happen" sections of ROADMAP.md.
 
-### Previous Session Summary
+### Previous Sessions Summary
 
-Session 1 (2026-04-23, Claude Desktop) was planning only. Produced the full vault scaffold (README, DECISIONS, ROADMAP, session-notes, code-walkthrough skeleton) and the repo scaffold (.claude config, .gitignore, this CLAUDE.md). No code written. All architectural decisions are captured in `DECISIONS.md`; read it first.
+- **Session 1** (2026-04-23, Claude Desktop): Planning only. Full vault scaffold, all architectural decisions captured in DECISIONS.md.
+- **Session 2** (2026-04-24, Claude Code): Steps 1-5 completed. Package scaffolding, dependencies, .env.example, LICENSE, reed-client.js.
+- **Session 3** (2026-05-05, Desktop + Code): Git init corrected (brought forward from step 18). Step 6 (search-jobs.js) completed. Shared helpers extracted to _shared.js. Step 7 (get-job-details.js) completed. Extract-vs-duplicate decision resolved (extract first). Per-step commit policy established.
