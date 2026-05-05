@@ -9,6 +9,7 @@
 
 import { z } from 'zod';
 import { ReedApiError } from '../reed-client.js';
+import { formatJob, messageForError } from './_shared.js';
 
 /** MCP tool name registered by the server. */
 export const name = 'search_jobs';
@@ -20,8 +21,8 @@ export const description =
 
 /**
  * Zod schema for the search_jobs arguments. Field names mirror Reed's
- * Jobseeker /search API exactly — see DECISIONS.md (2026-04-24, parameter
- * naming) for why we don't translate. The .refine() rule enforces a usage
+ * Jobseeker /search API exactly: see DECISIONS.md (2026-04-24, parameter
+ * naming) for why we do not translate. The .refine() rule enforces a usage
  * policy not in the API itself: callers must supply keywords or locationName,
  * so the tool never issues an unbounded query.
  */
@@ -124,7 +125,8 @@ export async function handler(args, client) {
 
 /**
  * Format Reed's search response as a human-readable summary aimed at an LLM
- * consumer.
+ * consumer. File-local because it is specific to multi-result search shape;
+ * the per-job formatting is shared via `formatJob` in `_shared.js`.
  *
  * @param {object} result - Reed's parsed response, shape
  *   `{ results, totalResults, ambiguousLocations }`.
@@ -143,75 +145,4 @@ function formatResults(result) {
   }
 
   return lines.join('\n');
-}
-
-/**
- * Format a single Reed job result as a multi-line block.
- *
- * @param {object} job - One entry from Reed's `results` array.
- * @returns {string}
- */
-function formatJob(job) {
-  const salary = formatSalary(job.minimumSalary, job.maximumSalary, job.currency);
-  const header = `[#${job.jobId}] ${job.jobTitle} — ${job.employerName}`;
-  const meta = [job.locationName, salary, job.date].filter(Boolean).join(' | ');
-  const lines = [header];
-  if (meta) lines.push(`  ${meta}`);
-  if (job.jobUrl) lines.push(`  ${job.jobUrl}`);
-  if (job.jobDescription) {
-    lines.push(`  ${truncate(job.jobDescription, 240)}`);
-  }
-  return lines.join('\n');
-}
-
-/**
- * Format Reed's min/max salary fields as a single string. Tolerates partial
- * data (only min, only max, neither).
- *
- * @param {number|null|undefined} min
- * @param {number|null|undefined} max
- * @param {string|null|undefined} currency
- * @returns {string} e.g. "GBP 50000-70000", "GBP 50000+", or "" if absent.
- */
-function formatSalary(min, max, currency) {
-  const cur = currency || 'GBP';
-  if (min && max) return `${cur} ${min}-${max}`;
-  if (min) return `${cur} ${min}+`;
-  if (max) return `${cur} up to ${max}`;
-  return '';
-}
-
-/**
- * Truncate a string to a maximum length, appending an ellipsis if cut.
- *
- * @param {string} text
- * @param {number} max
- * @returns {string}
- */
-function truncate(text, max) {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
-}
-
-/**
- * Map a ReedApiError to a user-facing message for MCP error responses.
- *
- * @param {ReedApiError} error
- * @returns {string}
- */
-function messageForError(error) {
-  switch (error.code) {
-    case 'RATE_LIMITED':
-      return error.retryAfter !== undefined
-        ? `Reed rate-limited the request. Retry after ${error.retryAfter} seconds.`
-        : 'Reed rate-limited the request. Try again shortly.';
-    case 'AUTH_FAILED':
-      return 'Reed rejected the API key. Check that REED_API_KEY is set correctly.';
-    case 'BAD_REQUEST':
-      return `Reed rejected the search parameters: ${error.message}`;
-    case 'NOT_FOUND':
-      return `Reed returned 404: ${error.message}`;
-    case 'UPSTREAM_ERROR':
-    default:
-      return `Reed upstream problem: ${error.message}`;
-  }
 }
