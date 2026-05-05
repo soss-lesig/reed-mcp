@@ -46,7 +46,7 @@ npm run start:http
 npm run start:stdio
 ```
 
-Both `npm run` scripts use Node's `--env-file=.env` flag (no dotenv runtime dependency) and will fail loudly if `.env` is missing or `REED_API_KEY` is not set.
+Both `npm run` scripts use Node's `--env-file=.env` flag (no dotenv runtime dependency) and will fail loudly if `.env` is missing or `REED_API_KEY` is not set. The path is resolved relative to the process's current working directory, so run the scripts from the repo root, or pass an absolute path (e.g. `--env-file=/srv/reed-mcp/.env`) when invoking from systemd, cron, or any other launcher with its own `cwd`.
 
 ## TLS and reverse proxies
 
